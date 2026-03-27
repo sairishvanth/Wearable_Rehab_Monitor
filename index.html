@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Posture Monitoring Dashboard</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+
+<style>
+
+body{
+margin:0;
+font-family:Poppins;
+background:linear-gradient(180deg,#2c2f66,#1d204a);
+color:white;
+}
+
+.container{
+width:92%;
+margin:auto;
+padding:25px;
+}
+
+h1{
+text-align:center;
+font-size:44px;
+color:#9fe3ff;
+margin-bottom:30px;
+}
+
+.grid{
+display:grid;
+grid-template-columns:420px auto;
+gap:25px;
+}
+
+.card{
+background:#2f3475;
+padding:25px;
+border-radius:20px;
+box-shadow:0 0 25px rgba(0,0,0,0.5);
+border:1px solid rgba(120,120,255,0.2);
+}
+
+.title{
+font-size:22px;
+margin-bottom:15px;
+color:#cfeaff;
+}
+
+.anglebox{
+display:flex;
+gap:15px;
+}
+
+.small{
+flex:1;
+background:#3a3f88;
+border-radius:14px;
+padding:20px;
+text-align:center;
+}
+
+.small h2{
+margin:5px;
+font-size:34px;
+}
+
+.status{
+text-align:center;
+margin-top:20px;
+font-size:22px;
+}
+
+.dot{
+display:inline-block;
+width:14px;
+height:14px;
+background:#00ff7f;
+border-radius:50%;
+margin-left:10px;
+box-shadow:0 0 12px #00ff7f;
+}
+
+.countrow{
+display:flex;
+gap:15px;
+margin-top:15px;
+}
+
+.count{
+flex:1;
+background:#3a3f88;
+border-radius:12px;
+padding:15px;
+text-align:center;
+}
+
+.download{
+margin-top:20px;
+width:100%;
+padding:16px;
+border-radius:14px;
+border:none;
+font-size:17px;
+color:white;
+background:linear-gradient(90deg,#7c3aed,#ff4db8);
+}
+
+.section{
+margin-top:25px;
+}
+
+canvas{
+background:transparent;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>ðŸƒâ€â™‚ï¸ Posture Monitoring Dashboard</h1>
+
+<div class="grid">
+
+<div class="card">
+
+<div class="title">Real-Time Status</div>
+
+<div class="anglebox">
+
+<div class="small">
+Back Angle
+<h2 id="back">0Â°</h2>
+</div>
+
+<div class="small">
+Knee Angle
+<h2 id="knee">0Â°</h2>
+</div>
+
+</div>
+
+<div class="status">
+Status: <b id="status">GOOD</b>
+<span class="dot"></span>
+</div>
+
+<div class="countrow">
+
+<div class="count">
+Good<br>
+<h2 id="good">0</h2>
+</div>
+
+<div class="count">
+Normal<br>
+<h2 id="normal">0</h2>
+</div>
+
+<div class="count">
+Poor<br>
+<h2 id="poor">0</h2>
+</div>
+
+</div>
+
+<button class="download">ðŸ“¥ Download Weekly Report (PDF)</button>
+
+</div>
+
+<div class="card">
+
+<div class="title">Timeline Analysis</div>
+
+<canvas id="lineChart"></canvas>
+
+</div>
+
+</div>
+
+<div class="card section">
+
+<div class="title">Distribution</div>
+
+<canvas id="barChart"></canvas>
+
+</div>
+
+</div>
+
+<script>
+
+let good=0,normal=0,poor=0
+
+let line=new Chart(document.getElementById("lineChart"),{
+type:'line',
+data:{
+labels:[],
+datasets:[
+{
+label:'Back Angle',
+data:[],
+borderColor:'#9be7ff',
+backgroundColor:'transparent',
+pointBackgroundColor:'#9be7ff',
+borderWidth:3,
+tension:0.4
+},
+{
+label:'Knee Angle',
+data:[],
+borderColor:'#a56bff',
+backgroundColor:'transparent',
+pointBackgroundColor:'#a56bff',
+borderWidth:3,
+tension:0.4
+}
+]
+},
+options:{
+plugins:{
+legend:{labels:{color:'white'}}
+},
+scales:{
+x:{ticks:{color:'#aaa'}},
+y:{ticks:{color:'#aaa'}}
+}
+}
+})
+
+let bar=new Chart(document.getElementById("barChart"),{
+type:'bar',
+data:{
+labels:['Good','Normal','Bad'],
+datasets:[{
+label:'Minutes',
+data:[0,0,0],
+backgroundColor:['#39ff14','#f2a65a','#ff4d4d']
+}]
+},
+options:{
+plugins:{
+legend:{labels:{color:'white'}}
+},
+scales:{
+x:{ticks:{color:'#aaa'}},
+y:{ticks:{color:'#aaa'}}
+}
+}
+})
+
+function update(){
+
+fetch("/data")
+.then(r=>r.json())
+.then(d=>{
+
+let b=d.back
+let k=d.knee
+
+document.getElementById("back").innerHTML=b.toFixed(1)+"Â°"
+document.getElementById("knee").innerHTML=k.toFixed(1)+"Â°"
+
+line.data.labels.push("")
+line.data.datasets[0].data.push(b)
+line.data.datasets[1].data.push(k)
+
+if(line.data.labels.length>60){
+line.data.labels.shift()
+line.data.datasets[0].data.shift()
+line.data.datasets[1].data.shift()
+}
+
+line.update()
+
+if(b<10){
+good++
+document.getElementById("status").innerHTML="GOOD"
+}
+else if(b<20){
+normal++
+document.getElementById("status").innerHTML="NORMAL"
+}
+else{
+poor++
+document.getElementById("status").innerHTML="POOR"
+}
+
+document.getElementById("good").innerHTML=good
+document.getElementById("normal").innerHTML=normal
+document.getElementById("poor").innerHTML=poor
+
+bar.data.datasets[0].data=[good,normal,poor]
+bar.update()
+
+})
+}
+
+setInterval(update,300)
+
+</script>
+<script>
+
+let good=0,normal=0,poor=0
+
+let line=new Chart(document.getElementById("lineChart"),{
+type:'line',
+data:{labels:[],datasets:[
+{label:'Back',data:[],borderColor:'#9be7ff',borderWidth:3},
+{label:'Knee',data:[],borderColor:'#a56bff',borderWidth:3}
+]},
+options:{
+animation:false,
+scales:{y:{min:-20,max:120}}
+}
+})
+
+let bar=new Chart(document.getElementById("barChart"),{
+type:'bar',
+data:{labels:['Good','Normal','Bad'],datasets:[
+{data:[0,0,0],backgroundColor:['#39ff14','#f2a65a','#ff4d4d']}
+]}
+})
+
+function update(){
+fetch("/data")
+.then(r=>r.json())
+.then(d=>{
+
+let b=d.back
+let k=d.knee
+
+document.getElementById("back").innerHTML=b.toFixed(1)+"Â°"
+document.getElementById("knee").innerHTML=k.toFixed(1)+"Â°"
+
+line.data.labels.push("")
+line.data.datasets[0].data.push(b)
+line.data.datasets[1].data.push(k)
+
+if(line.data.labels.length>60){
+line.data.labels.shift()
+line.data.datasets[0].data.shift()
+line.data.datasets[1].data.shift()
+}
+
+line.update()
+
+if(b<10){good++;document.getElementById("status").innerHTML="GOOD"}
+else if(b<20){normal++;document.getElementById("status").innerHTML="NORMAL"}
+else{poor++;document.getElementById("status").innerHTML="POOR"}
+
+document.getElementById("good").innerHTML=good
+document.getElementById("normal").innerHTML=normal
+document.getElementById("poor").innerHTML=poor
+
+bar.data.datasets[0].data=[good,normal,poor]
+bar.update()
+
+})
+}
+
+setInterval(update,400)
+
+function download(){
+window.open("/report")
+}
+
+</script>
+
+</body>
+</html>
